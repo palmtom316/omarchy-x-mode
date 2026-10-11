@@ -226,6 +226,7 @@ one pixels test needs `grim` and ImageMagick's `compare` (`magick`).
 | `integration/tab_close_keeps_group_raised_test.sh` | closing the current tab keeps focus and the raise in the group |
 | `integration/tab_drag_no_hang_test.sh` | a tab drag leaves the compositor answering and the group intact |
 | `integration/tab_drag_reorder_test.sh` | dragging a tab rewrites the order without moving the group |
+| `integration/tab_click_raises_test.sh` | clicking a lone tab (alwaysTabbar or compact) of a window behind another app focuses and raises it |
 | `integration/tabbar_plus_opens_window_test.sh` | the + slot opens another window that joins the group |
 | `integration/tiling_hotkeys_unbound_test.sh` | Super+O, Super+L and Super+T stay unbound |
 | `integration/titlebar_click_no_raise_other_test.sh` | a titlebar click still raises the right window with No gaps on |

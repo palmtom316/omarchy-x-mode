@@ -480,6 +480,14 @@ void CHyprBar::handleDownEvent(Event::SCallbackInfo& info, std::optional<ITouch:
                 m_iTabDragFrom    = TAB;
                 m_iTabDragOver    = TAB;
                 m_tabDragStart    = g_pInputManager->getMouseCoordsInternal();
+            } else {
+                // A lone tab (alwaysTabbar, or compact in the titlebar) used to
+                // swallow the click: TAB >= 0 returned without focusing or
+                // raising, so a window behind another app stayed behind. The
+                // titlebar and the content already raise; the tab has to as well.
+                if (Desktop::focusState()->window() != target)
+                    Desktop::focusState()->rawWindowFocus(target, Desktop::FOCUS_REASON_CLICK);
+                raiseFloating(target);
             }
         }
         return;

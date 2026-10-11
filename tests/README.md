@@ -109,10 +109,10 @@ behind that change how the next one lays out windows.
 
 Requirements: `hyprpm` headers (`hyprpm update`), `quickshell`/`qs` (the fake top
 bar and the dock), a terminal to open test windows (`foot`, `kitty`), and Qt's
-`qmllint` / `qmltestrunner` (in `/usr/lib/qt6/bin`). The two input tools need
-`wayland-scanner`, the `wayland-client` headers and, for the keyboard,
-`xkbcommon`. The one pixels test needs `grim` and ImageMagick's `compare`
-(`magick`).
+`qmllint` / `qmltestrunner` (in `/usr/lib/qt6/bin`). The input tools need
+`wayland-scanner` and the `wayland-client` headers, plus `xkbcommon` for the
+keyboard and `wayland-protocols` (the xdg-shell XML) for the dialog helper. The
+one pixels test needs `grim` and ImageMagick's `compare` (`magick`).
 
 ## Scenarios
 
@@ -240,6 +240,7 @@ bar and the dock), a terminal to open test windows (`foot`, `kitty`), and Qt's
 | `integration/lock_key_test.sh` | Ctrl+Cmd+Q locks the screen (Omarchy's lock command) and takes Omarchy's Calculator key with it; turning the option off gives the Calculator back, turning it on takes it again |
 | `integration/fade_opacity_reset_test.sh` | a reload leaves no window dimmed: the arrange fade runs in 25ms steps and the timers die with the config, so a window stuck at the first step (0.9, seen as a translucent titlebar) has to come back at 1 on the next load |
 | `integration/digit_tabs_test.sh` | with the workspaces on the F keys, the freed Cmd+1..0 follow each app's card: a reserved digit switches the pack's tab (and is eaten even with no such tab), `Super as Ctrl` alone hands over Ctrl+digit (byte-equal to a physical one), both flags mean the tab, and with neither the digit does nothing |
+| `integration/dialog_above_parent_test.sh` | a Wayland dialog stays above the window it was opened from when that parent takes the focus |
 | `integration/workspaces_on_fkeys_test.sh` | the workspace keys move to Super+F1..F10 and the pack binds the freed digits itself — Cmd+0 as the tenth tab, no generated super-ctrl bind left on them |
 
 `focus_test.sh` relies on `hyprctl clients -j` being in z-order (topmost last),
@@ -270,7 +271,9 @@ assert_ge "$(visual_top foot)" 36 "the titlebar clears the bar"
 ```
 
 Helpers: `key` (a chord in the nest), `open_window`, `open_command` (for a window
-that needs arguments, like a zenity dialog), `nest_clean`, `win_geom`, `visible_geom`, `visual_top`,
+that needs arguments, like a zenity dialog), `open_xdgchild` (a Wayland dialog:
+a toplevel and a child that names it as its xdg parent, see `tests/xdgchild/`),
+`nest_clean`, `win_geom`, `visible_geom`, `visual_top`,
 `group_size`, `group_order`, `active_class`, `active_address`,
 `active_tab_index`, `group_tab`, `topmost`, `bind_count`, `bind_count_desc`,
 `snap`, `bar_top`, `bar_height`, `tab_height`, `tab_point`, `tab_close_point`,
@@ -500,6 +503,23 @@ The bind *table* is still worth checking where the behaviour is what matters
 installed, which a keypress test cannot see. Note that a bind made with a raw
 keycode (`CTRL + code:10`) reports an empty `key`, which is why the description is
 needed there.
+
+`tests/xdgchild/` opens a Wayland dialog:
+
+```sh
+open_xdgchild xmode-app xmode-app    # a toplevel and a child that names it as its xdg parent
+```
+
+Two toplevels of one connection, the second with `xdg_toplevel.set_parent`
+pointing at the first, so Hyprland floats it and `hyprbars.groupable` refuses it
+a tab: the shape of Geary's Accounts window, a separate floating window of the
+same app. `set_parent` and not modal: modal comes from the separate
+xdg-dialog-v1 protocol, and the pack turns Hyprland's modal blocking off anyway.
+X11 would not do for the raise test -- Hyprland's `CWindowState::moveToZ` already
+lifts an X11 transient stack, so an X11 dialog is above its parent with or
+without the pack, and only a Wayland toplevel exercises the path this covers.
+`lib.sh` builds it into `.nest/xdgchild/` (`build_xdgchild`, with the xdg-shell
+XML from `wayland-protocols`).
 
 ## The dock
 

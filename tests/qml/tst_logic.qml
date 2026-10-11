@@ -26,6 +26,22 @@ TestCase {
         compare(Logic.shellQuote(""), "''")
     }
 
+    function test_parseLaunchCmd() {
+        var m = Logic.parseLaunchCmd("launch subl 3")
+        compare(m.cls, "subl")
+        compare(m.seq, 3)
+        compare(Logic.parseLaunchCmd("hide"), null)
+        compare(Logic.parseLaunchCmd(""), null)
+    }
+
+    function test_launchExecLine() {
+        compare(Logic.launchExecLine({ cmd: ["/usr/bin/subl", "--launch-or-new-window"] }, "subl"), "/usr/bin/subl --launch-or-new-window")
+        compare(Logic.launchExecLine({ id: "foot" }, "foot"), "gtk-launch foot.desktop")
+        compare(Logic.launchExecLine({ id: "org.telegram.desktop" }, "org.telegram.desktop"), "gtk-launch org.telegram.desktop.desktop")
+        compare(Logic.launchExecLine(null, "foot"), "gtk-launch foot.desktop")
+        compare(Logic.launchExecLine(null, ""), "")
+    }
+
     // A watched state file is written by truncating it first, so a reader can
     // land in the middle of a write. Every such read goes through an "answer"
     // helper: the state, or nothing -- never a default that blanks what the
@@ -68,6 +84,7 @@ TestCase {
         var s = Logic.parseApps('{"Chromium":{"chrome":false,"alwaysTabbar":true,"ctrlAsSuper":true,"ctrlCShift":true,"ctrlClick":true,"digitTabs":true,"ctrlTabSwitch":false,"ctrlAsSuperKeysOff":["F"]},"Zed":{}}')
         compare(s["chromium"].chrome, false)
         compare(s["chromium"].alwaysTabbar, true)
+        compare(s["chromium"].compactTabs, false)
         compare(s["chromium"].ctrlAsSuper, true)
         compare(s["chromium"].ctrlCShift, true)
         compare(s["chromium"].ctrlClick, true)
@@ -77,6 +94,8 @@ TestCase {
         compare(s["chromium"].ctrlAsSuperKeysOff.length, 1)
         compare(s["zed"].chrome, true)
         compare(s["zed"].alwaysTabbar, false)
+        compare(s["zed"].compactTabs, false)
+        compare(Logic.parseApps('{"Foot":{"compactTabs":true}}')["foot"].compactTabs, true)
         // Absent is not false: it is "follow the desktop".
         compare(s["zed"].ctrlAsSuper, undefined)
         compare(s["zed"].ctrlCShift, undefined)
@@ -293,6 +312,7 @@ TestCase {
         var dflt = Logic.panelCfgFor({}, "Zed")
         compare(dflt.chrome, true)
         compare(dflt.alwaysTabbar, false)
+        compare(dflt.compactTabs, false)
         compare(dflt.ctrlClick, undefined)
         compare(dflt.ctrlAsSuper, undefined)
         compare(dflt.ctrlCShift, undefined)
@@ -327,6 +347,11 @@ TestCase {
         var tabbar = Logic.setPanelFlag(chrome, "chromium", "alwaysTabbar", true)
         compare(tabbar.chromium.alwaysTabbar, true, "the other flag is kept")
         compare(tabbar.chromium.chrome, false)
+        var compact = Logic.setPanelFlag({}, "foot", "compactTabs", true)
+        compare(compact.foot.compactTabs, true)
+        compare(compact.foot.chrome, true)
+        var compactOff = Logic.setPanelFlag(compact, "foot", "compactTabs", false)
+        compare(compactOff.foot, undefined, "compact tabs alone at default drops the entry")
         var back = Logic.setPanelFlag(tabbar, "chromium", "alwaysTabbar", false)
         compare(back.chromium.alwaysTabbar, false, "cleared")
         compare(back.chromium.chrome, false, "the entry stays while chrome is off")

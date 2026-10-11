@@ -70,6 +70,9 @@ Item {
   // it. Written only when the published list changes, the same moment the
   // icons move.
   readonly property string orderPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/omarchy-x-mode.dock-order"
+  readonly property string launchPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/omarchy-x-mode-launch.cmd"
+  property int lastLaunchSeq: -1
+  property bool launchFileReady: false
   readonly property int iconSize: 26
   readonly property int pad: 7
   readonly property int iconSpacing: 6
@@ -168,16 +171,6 @@ Item {
   function appDisplayName(cls) { return icons.appDisplayName(cls) }
   function isSingleInstance(cls) { return icons.isSingleInstance(cls) }
 
-  // Desktop-entry file name for a window class. gtk-launch only resolves the
-  // literal file name, so the ".desktop" suffix must always be appended, even
-  // when the class itself already ends in it: the class `org.telegram.desktop`
-  // belongs to the file `org.telegram.desktop.desktop`. Passing the bare class
-  // (or treating a trailing ".desktop" as the file name) makes gtk-launch look
-  // for a file that does not exist and fail with "no such application".
-  function desktopIdFor(cls) {
-    return String(cls || "") + ".desktop"
-  }
-
   function activate(app) {
     // A left-click on the dock (now reachable while the menu is open, since
     // the overlay no longer covers it) dismisses any open menu.
@@ -189,37 +182,30 @@ Item {
     root.launchApp(app)
   }
 
-  // Launch a new instance of an app. Shared by the dock icon and the "New …"
-  // context-menu item; x-mode.lua groups same-app windows into one tab group.
+  // Launch a new instance of an app. Shared by the dock icon, the "New …"
+  // menu item, and the tabbar + (command file / xmodelaunch). Debounce so a
+  // double-click does not spawn two while the app is still starting. Spawn is
+  // Hyprland's exec, so the app is not a child of the shell (uwsm-app hangs in
+  // the nest and is not needed).
   function launchApp(app) {
     if (!app)
       return
-    // Ignore repeated launches while the app is still starting up.
     if (root.launching[app.cls])
       return
     root.launching[app.cls] = true
     launchClearTimer.restart()
-    // Same launch path as the Omarchy launcher: run inside a systemd scope via
-    // uwsm-app, so the app does not become a child of the shell (it would die on
-    // a shell restart) and does not inherit wayland-wm@.service.
-    var e = root.appEntryFor(app.cls)
-    var cmd = (e && e.cmd) ? e.cmd : null
-    if (cmd && cmd.length > 0) {
-      // Entry has a dedicated "New Window" action (e.g. Sublime Text).
-      var parts = ["uwsm-app", "--"]
-      for (var i = 0; i < cmd.length; i++)
-        parts.push(String(cmd[i]))
-      Quickshell.execDetached(parts)
-    } else if (e && e.id) {
-      // gtk-launch the matched entry: correct for web apps (runs
-      // omarchy-launch-webapp) and for classes that differ from the file name.
-      // Quickshell's entry id is the file basename without ".desktop"
-      // (org.telegram.desktop for org.telegram.desktop.desktop), so the suffix
-      // still has to be appended or gtk-launch reports "no such application".
-      Quickshell.execDetached(["uwsm-app", "--", "gtk-launch", root.desktopIdFor(e.id)])
-    } else {
-      Quickshell.execDetached(["uwsm-app", "--", "gtk-launch", root.desktopIdFor(app.cls)])
-    }
+    var line = Logic.launchExecLine(root.appEntryFor(app.cls), app.cls)
+    if (line === "")
+      return
+    Hyprland.dispatch("hl.dsp.exec_cmd([=[" + line + "]=])")
+  }
+
+  function applyLaunchCmd(raw) {
+    var m = Logic.parseLaunchCmd(raw)
+    if (!m || m.seq === root.lastLaunchSeq)
+      return
+    root.lastLaunchSeq = m.seq
+    root.launchApp({ cls: m.cls })
   }
 
   function togglePin(cls) {
@@ -592,6 +578,25 @@ Item {
     printErrors: false
   }
 
+  // Tabbar +. Ignore the leftover on first load so a previous session's file
+  // does not spawn a window when the dock starts; seq then dedupes the IPC.
+  FileView {
+    path: root.launchPath
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+    onLoaded: {
+      if (!root.launchFileReady) {
+        var m = Logic.parseLaunchCmd(text())
+        if (m)
+          root.lastLaunchSeq = m.seq
+        root.launchFileReady = true
+        return
+      }
+      root.applyLaunchCmd(text())
+    }
+  }
+
   FileView {
     id: pinnedFile
     path: root.pinnedPath
@@ -685,6 +690,8 @@ Item {
         return
       if (event.name === "xmode")
         root.applyXModeLine(event.data)
+      else if (event.name === "xmodelaunch")
+        root.applyLaunchCmd(event.data)
       // Style.gapsOut (the dock's screen margin) is only re-read on shell
       // startup and on a theme switch, so editing general:gaps_out left the
       // dock at the old distance until the shell restarted. Hyprland emits

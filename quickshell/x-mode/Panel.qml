@@ -320,6 +320,8 @@ Panel {
 
   // Two-line settings row with a trailing switch, the same shape as the
   // Bluetooth device rows. The whole row toggles; the switch is not interactive.
+  // A description is one caption line: 30 characters or less (the 360px card
+  // elides anything longer). Longer copy belongs in the README.
   component SwitchRow: CursorSurface {
     id: srow
     property string label: ""
@@ -814,7 +816,7 @@ Panel {
         width: parent.width
         visible: root.view === "main"
         label: "Compact tabs"
-        description: "One Chrome-like row; leftover drags the window"
+        description: "Tabs in the titlebar"
         checked: root.compactTabs
         rowEnabled: root.xModeOn
         onToggled: root.setCompactTabs(!root.compactTabs)
@@ -943,7 +945,7 @@ Panel {
           SwitchRow {
             width: parent.width
             label: "Compact tabs"
-            description: "One Chrome-like row; leftover drags the window"
+            description: "Tabs in the titlebar"
             checked: root.cfgFor(root.openCls).compactTabs
             rowEnabled: root.cfgFor(root.openCls).chrome
             onToggled: root.setFlag("compactTabs", !root.cfgFor(root.openCls).compactTabs)

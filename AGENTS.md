@@ -85,6 +85,9 @@ Pack code, in this repo:
   never lands on the live session half-done. The panel's settings
   (`~/.config/hypr/x-mode.json`) are the user's and sit next to that directory,
   not in it.
+- Panel copy is one caption line. A SwitchRow or LinkRow description is 30
+  characters or less: the settings card is 360px and elides anything longer.
+  Put the rest in the README, not in the row.
 - Keep pure parsing (no `hl`) in the `hypr/x-mode/` modules so it stays unit
   testable; event/state code stays in `x-mode.lua` and is covered by the nest.
   Geometry is the plugin's (`Snap::`), so there is one implementation: the pack

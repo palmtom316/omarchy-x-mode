@@ -393,7 +393,7 @@ it. If upstream ever refits on resize, `clampToWorkArea` can go.
 
 Waiting on a fixed sleep is how a test turns flaky. `wait_for_count CLASS N
 [SECONDS]` is the helper for "until it appears": a window opened through
-`gtk-launch`, as the tabbar's `+` does, takes much longer on a cold start than a
+`gtk-launch` (the dock's New and the tabbar `+`, via `omarchy-x-mode-launch.cmd`) takes much longer on a cold start than a
 plain window. And note that the pack's own launch paths inherit the nest's `HOME`,
 so a window they open reads no user config at all — a `foot` launched that way has
 no `foot.ini` and is unthemed.
@@ -539,10 +539,11 @@ For a running app with one window that is `"26 7 26 7 26 26"`: New, separator,
 the window row, separator, Pin/Unpin, Quit. `Quit` is the last row of every menu
 the dock builds, so it can be aimed at without knowing the rows above it.
 
-What the menu rows do is covered, but the ones that *launch* are not: they shell
-out through `uwsm-app` and `gtk-launch`, which hang in the nest (no uwsm session),
-so a test that clicked them would block instead of failing. Pin/Unpin and Quit act
-locally and are tested.
+What the menu rows do is covered, but the ones that *launch* are not: they call
+`launchApp` (the same path as the tabbar `+`), which is a real spawn, so a test
+that clicked them would open windows instead of staying local. Pin/Unpin and
+Quit act locally and are tested. The tabbar `+` scenario starts the dock so that
+path is covered from the other side.
 
 `nest_clean()` also clears the pinned file and any desktop entries written into
 the dock's HOME, and switches back to the first workspace: all three outlive one

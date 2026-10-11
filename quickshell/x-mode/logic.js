@@ -19,6 +19,34 @@ function shellQuote(s) {
     return "'" + String(s).replace(/'/g, "'\\''") + "'"
 }
 
+// The tabbar + command file / xmodelaunch IPC: "launch <class> <seq>".
+// seq is what makes a second + of the same class a new event.
+function parseLaunchCmd(raw) {
+    var parts = String(raw || "").trim().split(/\s+/)
+    if (parts.length < 3 || parts[0] !== "launch")
+        return null
+    var seq = Number(parts[2])
+    if (!isFinite(seq))
+        return null
+    return { cls: parts[1], seq: seq }
+}
+
+// Process string for hl.dsp.exec_cmd: New Window argv, else gtk-launch of the
+// desktop file name (always append .desktop; org.telegram.desktop is the class).
+function launchExecLine(entry, cls) {
+    var cmd = entry && entry.cmd
+    if (cmd && cmd.length > 0) {
+        var parts = []
+        for (var i = 0; i < cmd.length; i++)
+            parts.push(String(cmd[i]))
+        return parts.join(" ")
+    }
+    var id = (entry && entry.id) ? String(entry.id) : String(cls || "")
+    if (id === "")
+        return ""
+    return "gtk-launch " + id + ".desktop"
+}
+
 // The shell command that puts `text` in a file a watcher reads. It writes a
 // sibling temp file and renames it over the target: an in-place `printf > file`
 // truncates the target first, and a watcher that reacts to that event reads a

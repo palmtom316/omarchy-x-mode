@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # The + slot on the tabbar opens another window of the same app, and that window
-# joins the group. Its x is the last 34px of the tabbar.
+# joins the group. Its x is the last 34px of the tabbar. Launch is the dock's
+# (command file / xmodelaunch), so the dock has to be up.
 . "$(dirname "$0")/../../lib.sh"
 
+dock_start
 open_window foot
 open_window foot 2
 assert_eq "$(group_size foot)" 2 "two windows share the group"

@@ -26,6 +26,22 @@ TestCase {
         compare(Logic.shellQuote(""), "''")
     }
 
+    function test_parseLaunchCmd() {
+        var m = Logic.parseLaunchCmd("launch subl 3")
+        compare(m.cls, "subl")
+        compare(m.seq, 3)
+        compare(Logic.parseLaunchCmd("hide"), null)
+        compare(Logic.parseLaunchCmd(""), null)
+    }
+
+    function test_launchExecLine() {
+        compare(Logic.launchExecLine({ cmd: ["/usr/bin/subl", "--launch-or-new-window"] }, "subl"), "/usr/bin/subl --launch-or-new-window")
+        compare(Logic.launchExecLine({ id: "foot" }, "foot"), "gtk-launch foot.desktop")
+        compare(Logic.launchExecLine({ id: "org.telegram.desktop" }, "org.telegram.desktop"), "gtk-launch org.telegram.desktop.desktop")
+        compare(Logic.launchExecLine(null, "foot"), "gtk-launch foot.desktop")
+        compare(Logic.launchExecLine(null, ""), "")
+    }
+
     // A watched state file is written by truncating it first, so a reader can
     // land in the middle of a write. Every such read goes through an "answer"
     // helper: the state, or nothing -- never a default that blanks what the

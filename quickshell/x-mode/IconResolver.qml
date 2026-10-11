@@ -124,7 +124,6 @@ Item {
         continue
       if (id.indexOf("window") === -1 && name.indexOf("window") === -1)
         continue
-      // Skip private / incognito variants — we want a plain new window.
       if (id.indexOf("private") !== -1 || id.indexOf("incognito") !== -1)
         continue
       if (name.indexOf("private") !== -1 || name.indexOf("incognito") !== -1)

@@ -10,6 +10,7 @@
 #include <hyprland/src/desktop/view/LayerSurface.hpp>
 #include <hyprland/src/helpers/MiscFunctions.hpp>
 #include <hyprland/src/managers/SeatManager.hpp>
+#include <hyprland/src/managers/EventManager.hpp>
 #include <hyprland/src/managers/KeybindManager.hpp>
 #include <hyprland/src/managers/input/InputManager.hpp>
 #include <hyprland/src/managers/fullscreen/FullscreenController.hpp>
@@ -43,6 +44,26 @@
 // onMouseButton).
 static uint32_t g_lastPressTime   = 0;
 static uint32_t g_lastPressButton = 0;
+static uint64_t g_launchSeq       = 0;
+
+// Tabbar +: the dock is the pack's one launcher (New Window action / gtk-launch).
+// Same pattern as the snap preview: a command file plus an IPC event so a missed
+// inotify still fires. The seq makes a second + of the same class a new write.
+static void requestLaunch(const std::string& cls) {
+    if (cls.empty())
+        return;
+    const auto  seq  = ++g_launchSeq;
+    const auto  line = std::format("launch {} {}", cls, seq);
+    const char* runtime = std::getenv("XDG_RUNTIME_DIR");
+    const auto  path    = std::format("{}/omarchy-x-mode-launch.cmd", runtime && *runtime ? runtime : "/tmp");
+    FILE*       file    = std::fopen(path.c_str(), "w");
+    if (file) {
+        std::fprintf(file, "%s\n", line.c_str());
+        std::fclose(file);
+    }
+    if (g_pEventManager)
+        g_pEventManager->postEvent(SHyprIPCEvent{.event = "xmodelaunch", .data = line});
+}
 
 using namespace Render::GL;
 
@@ -400,8 +421,7 @@ void CHyprBar::handleDownEvent(Event::SCallbackInfo& info, std::optional<ITouch:
         m_bCancelledDown = true;
         std::string cls = PWINDOW->m_initialClass.empty() ? PWINDOW->m_class : PWINDOW->m_initialClass;
         if (!cls.empty()) {
-            // Same launcher the dock uses: desktop-id == window class for most apps.
-            g_pKeybindManager->m_dispatchers["exec"](std::format("gtk-launch {}", cls));
+            requestLaunch(cls);
         }
         return;
     }

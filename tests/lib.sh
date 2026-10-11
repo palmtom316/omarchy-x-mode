@@ -9,6 +9,7 @@
 
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$TESTS_DIR/.." && pwd)"
+XDGCHILD_DIR="$TESTS_DIR/xdgchild"
 # Paths that depend on which nest this process talks to. A parallel run gives
 # each worker its own slot; the built pointer, keyboard and nestq stay shared.
 nest_paths() {
@@ -35,6 +36,7 @@ nest_paths() {
   NESTQ="$NEST_ROOT/nestq"
   POINTER_BIN="$NEST_ROOT/pointer/pointer"
   KEYBOARD_BIN="$NEST_ROOT/keyboard/keyboard"
+  XDGCHILD_BIN="$NEST_ROOT/xdgchild/xdgchild"
   SIG="${SIG:-$(cat "$NEST_STATE/sig" 2>/dev/null || true)}"
   DOCK_RUNTIME="$NEST_RUNTIME"
   DOCK_CFG="$NEST_STATE/dock"
@@ -114,6 +116,25 @@ build_keyboard() {
     "$out/virtual-keyboard-unstable-v1-protocol.c" \
     $(pkg-config --cflags --libs wayland-client xkbcommon) \
     || fail "keyboard build failed"
+}
+
+# A Wayland toplevel pair for the scenarios that need a dialog: a toplevel with
+# an xdg parent (xdgchild). xdg-shell lives in wayland-protocols, unlike the wlr
+# protocols the pointer and keyboard vendor, so the XML comes from the system.
+build_xdgchild() {
+  local out="$NEST_ROOT/xdgchild" xdgdir
+  command -v wayland-scanner >/dev/null || fail "wayland-scanner not found"
+  pkg-config --exists wayland-client || fail "wayland-client headers not found"
+  pkg-config --exists wayland-protocols || fail "wayland-protocols not found"
+  xdgdir="$(pkg-config --variable=pkgdatadir wayland-protocols)/stable/xdg-shell"
+  [ -f "$xdgdir/xdg-shell.xml" ] || fail "xdg-shell.xml not found under $xdgdir"
+  mkdir -p "$out"
+  wayland-scanner client-header "$xdgdir/xdg-shell.xml" "$out/xdg-shell-client-protocol.h"
+  wayland-scanner private-code "$xdgdir/xdg-shell.xml" "$out/xdg-shell-client-protocol.c"
+  # shellcheck disable=SC2046 - pkg-config output is a flag list on purpose
+  cc -O2 -Wall -Wextra -I"$out" -o "$XDGCHILD_BIN" "$XDGCHILD_DIR/xdgchild.c" \
+    "$out/xdg-shell-client-protocol.c" $(pkg-config --cflags --libs wayland-client) \
+    || fail "xdgchild build failed"
 }
 
 # The nest is a toplevel on the host. Without this rule the host focuses it on
@@ -277,6 +298,7 @@ nest_start() {
     build_pointer
     build_keyboard
     build_nestq
+    build_xdgchild
   fi
   [ -x "$NESTQ" ] || fail "nestq is missing (build failed)"
   nest_stop
@@ -729,6 +751,23 @@ open_command() { # CLASS COMMAND...
     sleep 0.1
   done
   fail "command did not open another '$cls' window: $*"
+}
+
+# Open a Wayland dialog: a parent toplevel CLASS and a child toplevel CHILD
+# that names it with xdg_toplevel.set_parent (xdgchild). Hyprland floats the
+# child and hyprbars refuses it a tab, so it is a separate floating window of
+# the same app; with the same class for both, it is Geary's Accounts window.
+# Waits for both, like open_window.
+open_xdgchild() { # PARENT_CLASS CHILD_CLASS
+  local i
+  env WAYLAND_DISPLAY="$(nest_display)" setsid "$XDGCHILD_BIN" "$1" "$2" >/dev/null 2>&1 < /dev/null &
+  for i in $(seq 1 80); do
+    if [ "$(count_class "$1")" -ge 1 ] && [ "$(count_class "$2")" -ge 1 ]; then
+      return 0
+    fi
+    sleep 0.1
+  done
+  fail "xdgchild did not open '$1' with child '$2'"
 }
 
 # Wait until CLASS has COUNT windows, up to TIMEOUT seconds (10 by default). A

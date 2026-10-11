@@ -8,7 +8,9 @@
 
 > Never minimize or hide windows. Spaces are only for something extra. Snaps and tabs arrange the windows, so they can sit on top of each other, and you never think about spaces, hiding or where you put a window. The dock is always on for fast access.
 
-https://github.com/user-attachments/assets/0d840197-4fcf-4000-ba25-4ebfc3ff6c65
+https://github.com/user-attachments/assets/d1749801-e1cb-4fc9-a65a-03313b7797a8
+
+
 
 **Floating windows · Mac titlebars · App tabs · Window snapping · Dock · App switcher · Mac shortcuts**
 
@@ -23,6 +25,7 @@ The Mac habits that keep you fast — on Omarchy.
 * **Floating windows.** Everything opens floating.
 * **Titlebars like a Mac.** A window moves by the titlebar, closes with the button.
 * **Tabs in every app.** Like native tabs on a Mac, but for every app you choose: two windows of the same app on a workspace become tabs of one window.
+* **Compact tabs.** One Chrome-like titlebar row instead of titlebar plus tabbar. Tabs stay a limited width; leftover space after `+` drags the window. On for every app, or for one.
 * **Snaps.** Rectangle-like snapping from the titlebar: drag to a side for a half, a corner for a quarter, the top edge to maximize. `Super+Alt+←/→` cycles `½ → ⅔ → ⅓`.
 * **The Dock.** The familiar column of pinned and running apps, on the right edge. Click to focus or launch, right-click for a new window, the window list, pin or quit, drag pins to reorder.
 * **Command-Tab.** Hold Super and tap Tab — the app switcher you use all day, most recently used first. Click an icon or release Super to switch.
@@ -70,7 +73,7 @@ The main card:
 * **X Mode** on or off
 * **Native scroll** — natural (reversed) touchpad scrolling
 * **No gaps** — windows sit flush
-* **Compact tabs** — one Chrome-like titlebar row for every app
+* **Compact tabs** — tabs in the titlebar, for every app
 * **Shortcuts** — the default for every app
 * **Apps** — open one to change its titlebar and shortcuts
 
@@ -78,7 +81,7 @@ An app’s card:
 
 * **Titlebar and grouping**
 * **Always show tabbar** — including `+` for a single window
-* **Compact tabs** — one Chrome-like row; leftover space drags the window
+* **Compact tabs** — tabs in the titlebar
 * **Shortcuts** — this app only
 
 Each shortcut can stay with the desktop or go to the app, for everyone or for one app. From the main card the list is the default; from an app it is that app. A row there follows the default until you pin it Always on (green) or Always off (red) — so an editor can keep `⌘1`…`6` while titlebar tabs keep them everywhere else.
@@ -171,6 +174,7 @@ Super is Command (`⌘` in the panel).
 | Drag the titlebar to an edge | Snap |
 | Drag the titlebar to the top | Maximize |
 | Click `+` on the tabbar | New window of that app |
+| Drag leftover after `+` (compact tabs) | Move the window |
 | Drag a tab | Reorder tabs |
 | Left-click a dock icon | Focus or launch |
 | Right-click a dock icon | New window, window list, pin, quit |

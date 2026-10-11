@@ -8,8 +8,8 @@
 
 > Never minimize or hide windows. Spaces are only for something extra. Snaps and tabs arrange the windows, so they can sit on top of each other, and you never think about spaces, hiding or where you put a window. The dock is always on for fast access.
 
-https://github.com/user-attachments/assets/d1749801-e1cb-4fc9-a65a-03313b7797a8
 
+https://github.com/user-attachments/assets/7332b063-e951-4c79-8ff0-7629bc3ae810
 
 
 **Floating windows · Mac titlebars · App tabs · Window snapping · Dock · App switcher · Mac shortcuts**
